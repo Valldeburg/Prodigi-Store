@@ -1,0 +1,416 @@
+
+<div id="root" style="font-family:'Noto Sans',sans-serif;max-width:430px;margin:0 auto;min-height:700px;display:flex;flex-direction:column;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden;position:relative;"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+
+<style>
+.app-light { background:#fff; color:#111; }
+.app-dark  { background:#0f172a; color:#e2e8f0; }
+.app-dark .topbar  { background:#1e293b; border-color:#334155; }
+.app-dark .rowbtn  { background:#1e293b; border-color:#334155 !important; color:#e2e8f0 !important; }
+.app-dark .rowbtn:hover { background:#273549; }
+.app-dark .badge   { background:#334155 !important; color:#94a3b8 !important; }
+.app-dark .subbg   { background:#1e293b; }
+.app-dark .modalbg { background:#1e293b; }
+.app-dark .fld     { background:#273549; border-color:#475569; color:#e2e8f0; }
+.app-dark .paybtn  { background:#273549 !important; border-color:#475569 !important; color:#e2e8f0 !important; }
+.app-dark .paybtn.sel { background:#1d3a6b !important; border-color:#3b82f6 !important; color:#93c5fd !important; }
+.app-dark .breadcrumb { background:#1e293b; border-color:#334155; }
+.app-dark .bottom-nav { background:#1e293b; border-color:#334155; }
+.app-dark .separator { background:#334155; }
+.app-dark .section-header { background:#1e293b; border-color:#334155; }
+.app-dark .errbox { background:#450a0a !important; border-color:#7f1d1d !important; color:#fca5a5 !important; }
+.app-dark .search-input { background:#1e293b; border-color:#475569; color:#e2e8f0; }
+@keyframes spin { to { transform:rotate(360deg); } }
+@keyframes shimmer { 0%,100%{opacity:1}50%{opacity:.4} }
+* { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+button, input { font-family:inherit; }
+::-webkit-scrollbar { width:4px; }
+::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:2px; }
+</style>
+
+<script>
+const { useState, useEffect, useMemo, useRef, useCallback } = React;
+
+const SHEET_ID   = "1X_t14rDKi91ywyQRJYKwiQnblWIoc1Ia-ZZnLbexeVE";
+const WA_NUMBER  = "6288806545196";
+const CACHE_KEY  = "digistore_v2";
+const DARK_KEY   = "digistore_dark";
+
+const PAKET_SHEETS = ["SfData","TselData","IsatData","XlData","AxisData","ThreeData","ByUData"];
+const GAME_SHEET   = "GameData";
+
+const TABS = [
+  { id:"pulsa", label:"Pulsa dan\nToken",      sym:"bolt"   },
+  { id:"saldo", label:"Saldo dan\nPembayaran", sym:"dollar" },
+  { id:"paket", label:"Paket\nData/Kuota",     sym:"box"    },
+  { id:"game",  label:"Topup\nGame",           sym:"game"   },
+  { id:"apps",  label:"Apps\nPremium",         sym:"star"   },
+];
+
+/* ── icon ── */
+function Icon({ n, size=20, color }) {
+  const c = color||"currentColor";
+  const s = {width:size,height:size,display:"block"};
+  if(n==="bolt")   return React.createElement("svg",{...s,viewBox:"0 0 24 24",fill:c},React.createElement("path",{d:"M13 2L4.09 12.96A1 1 0 005 14.5h6.5L10 22l9.91-10.96A1 1 0 0019 9.5H12.5L13 2z"}));
+  if(n==="dollar") return React.createElement("svg",{...s,viewBox:"0 0 24 24",fill:c},React.createElement("path",{d:"M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09v.58c0 .74-.6 1.33-1.33 1.33-.74 0-1.33-.6-1.33-1.33v-.6c-1.33-.28-2.51-1.02-3.26-2.06a.875.875 0 01.19-1.22c.38-.28.9-.24 1.24.1.65.67 1.56 1.12 2.59 1.12 1.4 0 2.5-.73 2.5-1.83 0-.97-.67-1.56-2.33-2.06-2.17-.63-3.83-1.57-3.83-3.53 0-1.64 1.21-2.97 3.22-3.35V5.33C11.07 4.6 11.67 4 12.41 4c.74 0 1.33.6 1.33 1.33v.6c1.05.2 1.97.67 2.67 1.38.3.3.32.78.04 1.1-.32.35-.87.38-1.23.06-.57-.52-1.35-.85-2.25-.85-1.3 0-2.17.67-2.17 1.67 0 .93.67 1.47 2.5 2.03 2.33.7 3.67 1.63 3.67 3.63-.01 1.76-1.27 3.12-3.35 3.43z"}));
+  if(n==="box")    return React.createElement("svg",{...s,viewBox:"0 0 24 24",fill:c},React.createElement("path",{d:"M20 7h-4V5c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v2H4c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zm-6 0h-4V5h4v2z"}));
+  if(n==="game")   return React.createElement("svg",{...s,viewBox:"0 0 24 24",fill:c},React.createElement("path",{d:"M21.58 16.09l-1.09-7.66C20.21 6.46 18.52 5 16.53 5H7.47C5.48 5 3.79 6.46 3.51 8.43l-1.09 7.66C2.2 17.63 3.39 19 4.94 19c.68 0 1.32-.27 1.8-.75L9 16h6l2.25 2.25c.48.48 1.13.75 1.8.75 1.56 0 2.75-1.37 2.53-2.91zM11 11H9v2H7v-2H5v-2h2V7h2v2h2v2zm4 2c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm2-4c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"}));
+  if(n==="star")   return React.createElement("svg",{...s,viewBox:"0 0 24 24",fill:c},React.createElement("path",{d:"M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"}));
+  if(n==="search") return React.createElement("svg",{...s,viewBox:"0 0 24 24",fill:c},React.createElement("path",{d:"M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"}));
+  if(n==="refresh")return React.createElement("svg",{...s,viewBox:"0 0 24 24",fill:c},React.createElement("path",{d:"M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"}));
+  if(n==="menu")   return React.createElement("svg",{...s,viewBox:"0 0 24 24",fill:c},React.createElement("path",{d:"M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"}));
+  if(n==="back")   return React.createElement("svg",{...s,viewBox:"0 0 24 24",fill:c},React.createElement("path",{d:"M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"}));
+  if(n==="chev")   return React.createElement("svg",{...s,viewBox:"0 0 24 24",fill:c},React.createElement("path",{d:"M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"}));
+  if(n==="close")  return React.createElement("svg",{...s,viewBox:"0 0 24 24",fill:c},React.createElement("path",{d:"M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"}));
+  if(n==="moon")   return React.createElement("svg",{...s,viewBox:"0 0 24 24",fill:c},React.createElement("path",{d:"M12 3a9 9 0 109 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 01-4.4 2.26 5.403 5.403 0 01-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"}));
+  if(n==="sun")    return React.createElement("svg",{...s,viewBox:"0 0 24 24",fill:c},React.createElement("path",{d:"M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0a.996.996 0 000-1.41l-1.06-1.06zm1.06-10.96a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"}));
+  if(n==="wa")     return React.createElement("svg",{...s,viewBox:"0 0 24 24",fill:c},React.createElement("path",{d:"M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"}));
+  if(n==="cart")   return React.createElement("svg",{...s,viewBox:"0 0 24 24",fill:c},React.createElement("path",{d:"M7 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM7.83 14H17c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0021.46 5H5.21L4.27 3H1v2h2l3.6 7.59L5.25 14c-.16.28-.25.61-.25.96C5 16.1 5.9 17 7 17h12v-2H7.42c-.13 0-.25-.11-.25-.25l.03-.12.55-1.03z"}));
+  return null;
+}
+
+/* ── fetch gviz ── */
+function parseGviz(raw) {
+  try {
+    const s = raw.indexOf("{"), e = raw.lastIndexOf("}");
+    if (s<0||e<0) return { cols:[], rows:[] };
+    const d = JSON.parse(raw.slice(s, e+1));
+    if (!d.table?.rows) return { cols:[], rows:[] };
+    const cols = d.table.cols.map((c,i)=>({ id: c.label || c.id || `col${i}`, idx:i }));
+    const rows = d.table.rows.filter(r=>r?.c).map(row => {
+      const obj = {};
+      cols.forEach(c => {
+        obj[c.id] = row.c[c.idx]?.f ?? row.c[c.idx]?.v ?? "";
+      });
+      return obj;
+    });
+    return { cols, rows };
+  } catch(e) { console.warn("gviz parse error:", e); return { cols:[], rows:[] }; }
+}
+
+async function fetchSheet(name) {
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(name)}&headers=1`;
+  try {
+    const res = await fetch(url, { cache:"no-store" });
+    if (!res.ok) { console.warn("HTTP error", res.status, name); return []; }
+    const text = await res.text();
+    const { cols, rows } = parseGviz(text);
+    if (rows.length === 0) { console.warn("No rows in", name, "cols:", cols.map(c=>c.id)); }
+    else console.log("Sheet", name, "→", rows.length, "rows, cols:", cols.map(c=>c.id));
+    return rows;
+  } catch(e) { console.warn("Fetch error", name, e.message); return []; }
+}
+
+/* ── flexible column getters ── */
+function anyCol(row, ...keys) {
+  for (const k of keys) {
+    const v = row[k];
+    if (v !== undefined && v !== null && v !== "") return String(v).trim();
+  }
+  return "";
+}
+
+function detectNama(row) {
+  return anyCol(row,"Nama","nama","NAMA","Name","name","Group","group","Produk","produk");
+}
+function detectKet(row) {
+  return anyCol(row,"Keterangan","keterangan","KETERANGAN","Description","desc","Paket","paket","Item");
+}
+function detectHarga(row) {
+  return anyCol(row,"Nominal_Harga_Jual","Nominal Harga Jual","harga","Harga","HARGA","Price","price","Jual","jual","Harga Jual","HargaJual");
+}
+function detectKode(row) {
+  return anyCol(row,"kode","Kode","KODE","Kd","KD","Code","code","ID","id");
+}
+
+function fmtRp(val) {
+  if (!val && val !== 0) return "";
+  const n = parseInt(String(val).replace(/[^\d]/g,""),10);
+  return isNaN(n) ? String(val) : "Rp " + n.toLocaleString("id-ID");
+}
+
+function loadCache() { try { return JSON.parse(localStorage.getItem(CACHE_KEY)||"{}"); } catch { return {}; } }
+function saveCache(d) { try { localStorage.setItem(CACHE_KEY,JSON.stringify(d)); } catch {} }
+function loadDark() { try { return localStorage.getItem(DARK_KEY)==="1"; } catch { return false; } }
+function saveDark(v) { try { localStorage.setItem(DARK_KEY,v?"1":"0"); } catch {} }
+
+/* ── skeleton ── */
+function Skel() {
+  return React.createElement("div", { style:{padding:"14px 16px",borderBottom:"1px solid #e2e8f0",display:"flex",alignItems:"center",gap:12,opacity:.6} },
+    React.createElement("div",{style:{flex:1,height:15,background:"#e2e8f0",borderRadius:4,animation:"shimmer 1.4s infinite"}}),
+    React.createElement("div",{style:{width:28,height:20,background:"#e2e8f0",borderRadius:4,animation:"shimmer 1.4s infinite"}}),
+    React.createElement("div",{style:{width:10,height:15,background:"#e2e8f0",borderRadius:4,animation:"shimmer 1.4s infinite"}})
+  );
+}
+
+/* ════════════════════════════════ APP ════════════════════════════════ */
+function App() {
+  const [dark, setDark]           = useState(loadDark);
+  const [tab,  setTab]            = useState("game");
+  const [paketRows, setPaket]     = useState([]);
+  const [gameRows,  setGame]      = useState([]);
+  const [loadP, setLoadP]         = useState(false);
+  const [loadG, setLoadG]         = useState(false);
+  const [loadStatus, setStatus]   = useState("");
+  const [group, setGroup]         = useState(null);
+  const [product, setProduct]     = useState(null);
+  const [query, setQuery]         = useState("");
+  const [showSearch, setShowSrch] = useState(false);
+  const [form, setForm]           = useState({});
+  const [cache, setCache]         = useState(loadCache);
+  const [err, setErr]             = useState("");
+
+  /* ── colours ── */
+  const TH  = dark ? "#38bdf8" : "#0ea5e9"; // cart teal
+  const BLU = "#2563eb";
+  const bg  = dark ? "#0f172a" : "#fff";
+  const bg2 = dark ? "#1e293b" : "#f8fafc";
+  const bg3 = dark ? "#273549" : "#f1f5f9";
+  const txt = dark ? "#e2e8f0" : "#111";
+  const txt2= dark ? "#94a3b8" : "#64748b";
+  const brd = dark ? "#334155" : "#e2e8f0";
+  const grn = dark ? "#34d399" : "#059669";
+
+  useEffect(()=>{ saveDark(dark); },[dark]);
+
+  useEffect(()=>{
+    if (tab==="paket" && paketRows.length===0 && !loadP) loadPaket();
+    if (tab==="game"  && gameRows.length===0  && !loadG) loadGame();
+  },[tab]);
+
+  async function loadPaket() {
+    setLoadP(true);
+    const all=[];
+    for (const s of PAKET_SHEETS) {
+      setStatus("Memuat "+s+"…");
+      const rows = await fetchSheet(s);
+      const valid = rows.filter(r => detectNama(r) !== "");
+      console.log(s, valid.length,"valid rows. First:", valid[0]);
+      all.push(...valid);
+    }
+    setPaket(all);
+    setStatus("");
+    setLoadP(false);
+  }
+
+  async function loadGame() {
+    setLoadG(true);
+    setStatus("Memuat "+GAME_SHEET+"…");
+    const rows = await fetchSheet(GAME_SHEET);
+    console.log("GameData raw first row:", rows[0]);
+    const valid = rows.filter(r => detectNama(r) !== "");
+    console.log("GameData valid:", valid.length);
+    setGame(valid);
+    setStatus("");
+    setLoadG(false);
+  }
+
+  function refresh() {
+    if (tab==="paket") { setPaket([]); loadPaket(); }
+    if (tab==="game")  { setGame([]);  loadGame();  }
+  }
+
+  const curRows = tab==="paket" ? paketRows : tab==="game" ? gameRows : [];
+  const loading = tab==="paket" ? loadP : tab==="game" ? loadG : false;
+
+  const groups = useMemo(()=>{
+    if (!curRows.length) return [];
+    const map = new Map();
+    curRows.forEach(r => {
+      const n = detectNama(r) || "Lainnya";
+      if(!map.has(n)) map.set(n,[]);
+      map.get(n).push(r);
+    });
+    let arr = Array.from(map.entries()).map(([name,items])=>({name,items,count:items.length}));
+    if(query.trim()) arr = arr.filter(g=>g.name.toLowerCase().includes(query.toLowerCase()));
+    return arr;
+  },[curRows,query]);
+
+  const subItems = group ? (groups.find(g=>g.name===group)?.items || []) : [];
+
+  function openForm(p) {
+    const gn = detectNama(p);
+    setForm(cache[gn]||{});
+    setErr("");
+    setProduct(p);
+  }
+  function closeForm() { setProduct(null); setErr(""); }
+
+  function handleOrder() {
+    if (!product) return;
+    const isGame = tab==="game";
+    if (isGame && !form.idTujuan)  { setErr("No./ID Tujuan wajib diisi"); return; }
+    if (!isGame && !form.nomor)    { setErr("Nomor tujuan wajib diisi");   return; }
+    if (!form.bayar)               { setErr("Pilih metode pembayaran");    return; }
+    const gn = detectNama(product);
+    const nc = {...cache,[gn]:form};
+    setCache(nc); saveCache(nc);
+    const url = isGame ? buildGameURL(product,form.idTujuan,form.bayar)
+                       : buildPaketURL(product,form.nomor,form.bayar);
+    window.open(url,"_blank");
+  }
+
+  function hargaNum(p) {
+    const raw = detectHarga(p);
+    const n = parseInt(String(raw).replace(/[^\d]/g,""),10);
+    return isNaN(n) ? raw : n.toLocaleString("id-ID");
+  }
+
+  function buildPaketURL(p,nomor,bayar) {
+    const msg = `> \u24ea _*Segera lakukan pembayaran sesuai harga dan kirim buktinya agar transaksi dapat diproses*_\n\nPermisi, saya mau beli paketan.\nJenis: ${detectNama(p)}\nKeterangan: ${detectKet(p)}\nKode: ${detectKode(p)}\nHarga: Rp. ${hargaNum(p)}\nNomor: ${nomor}\nPembayaran: ${bayar}\n\n> _Pastikan Nomor tujuan telah sesuai_\n> _Pembayaran: tunai/bank/qris/utang_\n> _*Ubah "X" dengan data yang tepat*_`;
+    return `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`;
+  }
+  function buildGameURL(p,id,bayar) {
+    const msg = `> \u24ea _*Segera lakukan pembayaran sesuai harga dan kirim buktinya agar transaksi dapat diproses*_\n\nPermisi, saya mau topup game.\nJenis: ${detectNama(p)}\nKeterangan: ${detectKet(p)}\nKode: ${detectKode(p)}\nHarga: Rp. ${hargaNum(p)}\nNo./ID Tujuan: ${id}\nPembayaran: ${bayar}\n\n> _Pastikan No./ID Tujuan telah sesuai_\n> _Pembayaran: tunai/bank/qris/utang_\n> _*Ubah "X" dengan data yang tepat*_`;
+    return `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`;
+  }
+
+  function switchTab(id) {
+    setTab(id); setGroup(null); setQuery(""); setShowSrch(false); setProduct(null);
+  }
+
+  const PAYS = ["Tunai","QRIS","Transfer","Utang"];
+
+  const inputStyle = { width:"100%", padding:"10px 12px", borderRadius:8, border:`1px solid ${brd}`, fontSize:14, background:bg3, color:txt, outline:"none" };
+
+  /* ── render ── */
+  return React.createElement("div",{className:"app-root",style:{display:"flex",flexDirection:"column",height:700,overflow:"hidden",background:bg,position:"relative",transition:"background .2s"}},
+
+    /* TOP BAR */
+    React.createElement("div",{className:"topbar",style:{display:"flex",alignItems:"center",padding:"10px 14px",borderBottom:`1px solid ${brd}`,gap:10,flexShrink:0,background:bg}},
+      React.createElement("button",{onClick:()=>{},style:{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex",color:txt2}}, React.createElement(Icon,{n:"menu",color:txt2})),
+      React.createElement(Icon,{n:"cart",color:TH,size:22}),
+      React.createElement("div",{style:{flex:1}}),
+      loadStatus && React.createElement("span",{style:{fontSize:11,color:txt2,marginRight:4}},loadStatus),
+      React.createElement("button",{onClick:()=>setShowSrch(s=>!s),style:{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}, React.createElement(Icon,{n:"search",color:txt2})),
+      React.createElement("button",{onClick:refresh,style:{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}, React.createElement(Icon,{n:"refresh",color:txt2})),
+      React.createElement("button",{onClick:()=>setDark(d=>!d),style:{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex",borderRadius:20}},
+        dark ? React.createElement(Icon,{n:"sun",color:"#f59e0b",size:20}) : React.createElement(Icon,{n:"moon",color:txt2,size:20})
+      )
+    ),
+
+    /* SEARCH */
+    showSearch && React.createElement("div",{style:{padding:"8px 14px",borderBottom:`1px solid ${brd}`,flexShrink:0,background:bg}},
+      React.createElement("input",{className:"search-input",value:query,onChange:e=>setQuery(e.target.value),placeholder:"Cari produk...",style:{...inputStyle}})
+    ),
+
+    /* BREADCRUMB */
+    group && React.createElement("div",{className:"breadcrumb",style:{padding:"10px 14px",borderBottom:`1px solid ${brd}`,display:"flex",alignItems:"center",gap:8,flexShrink:0,background:bg2}},
+      React.createElement("button",{onClick:()=>setGroup(null),style:{background:"none",border:"none",cursor:"pointer",display:"flex",padding:0}}, React.createElement(Icon,{n:"back",color:BLU})),
+      React.createElement("span",{style:{fontWeight:500,fontSize:15,color:txt,flex:1}},group),
+      React.createElement("span",{style:{fontSize:12,color:txt2}},subItems.length+" produk")
+    ),
+
+    /* CONTENT */
+    React.createElement("div",{style:{flex:1,overflowY:"auto",background:bg}},
+      loading
+        ? React.createElement("div",null,
+            loadStatus && React.createElement("div",{style:{padding:"10px 16px",fontSize:12,color:txt2,background:bg2,borderBottom:`1px solid ${brd}`}},loadStatus),
+            [...Array(12)].map((_,i)=>React.createElement(Skel,{key:i}))
+          )
+        : (tab!=="paket"&&tab!=="game")
+          ? React.createElement("div",{style:{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",gap:14,padding:40}},
+              React.createElement("div",{style:{fontSize:48,opacity:.3}},"🚧"),
+              React.createElement("div",{style:{fontSize:15,fontWeight:500,color:txt}},"Segera Hadir"),
+              React.createElement("div",{style:{fontSize:13,color:txt2,textAlign:"center"}},"Tab ini sedang dalam pengembangan")
+            )
+          : !group
+            ? React.createElement("div",null,
+                React.createElement("div",{className:"section-header",style:{padding:"10px 16px",borderBottom:`1px solid ${brd}`,background:bg2}},
+                  React.createElement("span",{style:{fontSize:12,fontWeight:500,color:txt2,letterSpacing:.5}},tab==="game"?"GAME":"OPERATOR")
+                ),
+                curRows.length===0 && !loading
+                  ? React.createElement("div",{style:{padding:40,textAlign:"center",color:txt2,fontSize:14}},
+                      React.createElement("div",{style:{fontSize:36,marginBottom:12,opacity:.4}},"📭"),
+                      React.createElement("div",null,"Tidak ada data"),
+                      React.createElement("div",{style:{fontSize:12,marginTop:6}},"Cek console browser untuk detail error"),
+                      React.createElement("button",{onClick:refresh,style:{marginTop:16,padding:"8px 20px",background:BLU,color:"#fff",border:"none",borderRadius:8,cursor:"pointer",fontSize:13}},"\u21bb Coba Lagi")
+                    )
+                  : React.createElement("div",null,
+                      !query && React.createElement("div",{style:{padding:"14px 16px",borderBottom:`1px solid ${brd}`,display:"flex",alignItems:"center",cursor:"pointer",background:bg}},
+                        React.createElement("span",{style:{flex:1,fontSize:15,color:txt}})
+                      ),
+                      groups.map(({name,count})=>
+                        React.createElement("button",{key:name,className:"rowbtn",onClick:()=>setGroup(name),style:{width:"100%",display:"flex",alignItems:"center",padding:"14px 16px",background:bg,border:"none",borderBottom:`1px solid ${brd}`,cursor:"pointer"}},
+                          React.createElement("span",{style:{flex:1,fontSize:15,color:txt,textAlign:"left"}},name),
+                          React.createElement("span",{className:"badge",style:{background:"#e5e7eb",color:"#374151",borderRadius:6,padding:"2px 8px",fontSize:12,fontWeight:500,marginRight:8,minWidth:24,textAlign:"center"}},count),
+                          React.createElement(Icon,{n:"chev",color:txt2,size:18})
+                        )
+                      )
+                    )
+              )
+            : React.createElement("div",null,
+                subItems.length===0
+                  ? React.createElement("div",{style:{padding:40,textAlign:"center",color:txt2}}, "Tidak ada produk")
+                  : subItems.map((p,i)=>{
+                      const ket  = detectKet(p);
+                      const kode = detectKode(p);
+                      const hrg  = detectHarga(p);
+                      const hn   = parseInt(String(hrg).replace(/[^\d]/g,""),10);
+                      return React.createElement("div",{key:i,style:{padding:"12px 16px",borderBottom:`1px solid ${brd}`,display:"flex",alignItems:"center",gap:12,background:bg}},
+                        React.createElement("div",{style:{flex:1,minWidth:0}},
+                          React.createElement("div",{style:{fontSize:14,fontWeight:500,color:txt,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}, ket||kode||"-"),
+                          kode&&ket&&React.createElement("div",{style:{fontSize:11,color:txt2,marginTop:2}},kode),
+                          React.createElement("div",{style:{fontSize:13,color:grn,fontWeight:500,marginTop:3}}, isNaN(hn)?(hrg||"-"):"Rp "+hn.toLocaleString("id-ID"))
+                        ),
+                        React.createElement("button",{onClick:()=>openForm(p),style:{background:BLU,color:"#fff",border:"none",borderRadius:8,padding:"7px 14px",fontSize:13,fontWeight:500,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}},"Beli")
+                      );
+                    })
+              )
+    ),
+
+    /* MODAL */
+    product && React.createElement("div",{style:{position:"absolute",inset:0,background:"rgba(0,0,0,.5)",display:"flex",flexDirection:"column",justifyContent:"flex-end",zIndex:200,borderRadius:"inherit"}},
+      React.createElement("div",{className:"modalbg",style:{background:bg,borderRadius:"16px 16px 0 0",padding:"20px 16px 28px",maxHeight:"92%",overflowY:"auto"}},
+        React.createElement("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}},
+          React.createElement("div",{style:{flex:1,paddingRight:8}},
+            React.createElement("div",{style:{fontWeight:500,fontSize:15,color:txt,lineHeight:1.4}},detectKet(product)||detectNama(product)),
+            React.createElement("div",{style:{fontSize:12,color:txt2,marginTop:2}},"Kode: "+detectKode(product)),
+            React.createElement("div",{style:{color:grn,fontWeight:500,fontSize:15,marginTop:4}},fmtRp(detectHarga(product)))
+          ),
+          React.createElement("button",{onClick:closeForm,style:{background:bg2,border:"none",borderRadius:"50%",width:30,height:30,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}},
+            React.createElement(Icon,{n:"close",color:txt2,size:14})
+          )
+        ),
+        React.createElement("div",{style:{height:1,background:brd,marginBottom:16}}),
+
+        tab==="game"
+          ? React.createElement("div",{style:{marginBottom:14}},
+              React.createElement("label",{style:{display:"block",fontSize:13,fontWeight:500,color:txt2,marginBottom:6}},"No./ID Tujuan *"),
+              React.createElement("input",{value:form.idTujuan||"",onChange:e=>{setForm({...form,idTujuan:e.target.value});setErr("");},placeholder:"Masukkan ID game",style:{...inputStyle}})
+            )
+          : React.createElement("div",{style:{marginBottom:14}},
+              React.createElement("label",{style:{display:"block",fontSize:13,fontWeight:500,color:txt2,marginBottom:6}},"Nomor Tujuan *"),
+              React.createElement("input",{value:form.nomor||"",onChange:e=>{setForm({...form,nomor:e.target.value});setErr("");},placeholder:"08xxxxxxxxxx",type:"tel",style:{...inputStyle}})
+            ),
+
+        React.createElement("label",{style:{display:"block",fontSize:13,fontWeight:500,color:txt2,marginBottom:8}},"Metode Pembayaran *"),
+        React.createElement("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}},
+          PAYS.map(m=>React.createElement("button",{key:m,className:"paybtn"+(form.bayar===m?" sel":""),onClick:()=>{setForm({...form,bayar:m});setErr("");},style:{padding:"10px 8px",borderRadius:8,border:form.bayar===m?`1.5px solid ${BLU}`:`1px solid ${brd}`,background:form.bayar===m?(dark?"#1d3a6b":"#eff6ff"):(dark?"#1e293b":"#f8fafc"),color:form.bayar===m?(dark?"#93c5fd":BLU):txt,fontWeight:form.bayar===m?500:400,cursor:"pointer",fontSize:13,transition:"all .15s"}},m))
+        ),
+        err&&React.createElement("div",{className:"errbox",style:{background:"#fef2f2",border:"1px solid #fecaca",borderRadius:8,padding:"8px 12px",marginBottom:12,fontSize:13,color:"#dc2626"}},err),
+        React.createElement("button",{onClick:handleOrder,style:{width:"100%",background:"#25d366",color:"#fff",border:"none",borderRadius:10,padding:13,fontSize:15,fontWeight:500,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8}},
+          React.createElement(Icon,{n:"wa",color:"#fff",size:18}),
+          "Pesan via WhatsApp"
+        )
+      )
+    ),
+
+    /* BOTTOM NAV */
+    React.createElement("div",{className:"bottom-nav",style:{display:"flex",borderTop:`1px solid ${brd}`,background:bg,flexShrink:0}},
+      TABS.map(t=>{
+        const active=t.id===tab;
+        return React.createElement("button",{key:t.id,onClick:()=>switchTab(t.id),style:{flex:1,padding:"8px 2px 10px",border:"none",cursor:"pointer",background:active?BLU:"transparent",display:"flex",flexDirection:"column",alignItems:"center",gap:3,borderRadius:0,transition:"background .15s"}},
+          React.createElement(Icon,{n:t.sym,color:active?"#fff":(dark?"#94a3b8":"#64748b"),size:20}),
+          React.createElement("span",{style:{fontSize:9,lineHeight:1.2,textAlign:"center",whiteSpace:"pre-line",color:active?"#fff":(dark?"#94a3b8":"#64748b"),fontWeight:active?500:400}},t.label)
+        );
+      })
+    )
+  );
+}
+
+const rootEl = ReactDOM.createRoot(document.getElementById("root"));
+rootEl.render(React.createElement(App));
+</script>
